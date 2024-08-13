@@ -4,17 +4,17 @@ const { signToken } = require('../utils/auth');
 // Resolvers for GraphQL
 const resolvers = {
   Query: {
-    // Get the current logged-in user
     me: async (_, __, { user }) => {
-      // Check if there's a user in context (authenticated user)
       if (!user) {
         throw new Error('Not authenticated');
       }
       return await User.findById(user._id);
     },
+    getSingleUser: async (_, { userId, username }) => {
+      // Implementation for getSingleUser if needed
+    },
   },
   Mutation: {
-    // Create a new user and return a token and the user
     addUser: async (_, { username, email, password }) => {
       const user = await User.create({ username, email, password });
       if (!user) {
@@ -23,7 +23,6 @@ const resolvers = {
       const token = signToken(user);
       return { token, user };
     },
-    // Log in an existing user and return a token and the user
     login: async (_, { email, password, username }) => {
       const user = await User.findOne({ $or: [{ username }, { email }] });
       if (!user) {
@@ -37,23 +36,21 @@ const resolvers = {
       const token = signToken(user);
       return { token, user };
     },
-    // Save a book to the logged-in user's savedBooks
-    saveBook: async (_, { input }, { user }) => {
+    saveBook: async (_, { bookId, description, title, authors, image, link }, { user }) => {
       if (!user) {
         throw new Error('Not authenticated');
       }
       try {
         return await User.findOneAndUpdate(
           { _id: user._id },
-          { $addToSet: { savedBooks: input } },
+          { $addToSet: { savedBooks: { bookId, description, title, authors, image, link } } },
           { new: true, runValidators: true }
         );
       } catch (err) {
         throw new Error('Error saving book: ' + err.message);
       }
     },
-    // Remove a book from the logged-in user's savedBooks
-    removeBook: async (_, { bookId }, { user }) => {
+    deleteBook: async (_, { bookId }, { user }) => {
       if (!user) {
         throw new Error('Not authenticated');
       }
